@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Faculty Attendance</title>
+<link rel="manifest" href="/manifest.json" />
+<meta name="theme-color" content="#14181c" />
+<link rel="icon" href="/icon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="/style.css" />
+<style>
+  body { padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .topbar {
+    position: sticky; top: 0; z-index: 5; display: flex; align-items: center; justify-content: space-between;
+    padding: env(safe-area-inset-top, 14px) 18px 14px; background: var(--paper); border-bottom: 1px solid var(--line);
+  }
+  .topbar h1 { font-size: 1.05rem; font-weight: 600; }
+  .conn { display:flex; align-items:center; gap:.5em; font-family: var(--font-mono); font-size: .78rem; color: var(--ink-soft); }
+  .conn .dot { width:7px; height:7px; border-radius:50%; background: var(--error); }
+  .conn.online .dot { background: var(--synced); }
+  main { max-width: 520px; margin: 0 auto; padding: 20px 18px 40px; }
+  .field { margin-bottom: 14px; }
+  .field label { display:block; font-size:.82rem; color: var(--ink-soft); margin-bottom: 6px; }
+  .field input {
+    width: 100%; padding: .75em .85em; border-radius: 6px; border: 1px solid var(--line-strong);
+    font-family: var(--font-body); font-size: 1rem; background: var(--surface); color: var(--ink);
+  }
+  #startBtn { width: 100%; margin-top: 6px; padding: 1em; font-size: 1.02rem; }
+
+  #cameraStage[hidden] { display:none; }
+  #cameraStage { position: fixed; inset:0; background:#000; z-index: 15; display:flex; flex-direction:column; }
+  #camVideo { flex:1; width:100%; height:100%; object-fit: cover; background:#000; }
+  .camHint { position:absolute; top: 46%; left:0; right:0; text-align:center; transform: translateY(-50%);
+    color:#fff; font-size:.92rem; opacity:.9; padding: 0 20px; }
+  .camBottom { position:absolute; bottom: calc(env(safe-area-inset-bottom, 0px) + 22px); left:0; right:0;
+    display:flex; flex-direction:column; align-items:center; gap:12px; padding: 0 22px; }
+  .camBottom .btn { width: 100%; max-width: 360px; }
+  .camBottom .btn-ghost { background: rgba(255,255,255,.08); color:#fff; border-color: rgba(255,255,255,.4); }
+
+  #log { margin-top: 26px; }
+  #log h2 { font-size: 1rem; font-weight: 600; margin-bottom: 10px; }
+  #logList { list-style:none; margin:0; padding:0; border-top: 1px solid var(--line); }
+  #logList li { display:flex; align-items:center; gap: 12px; padding: 12px 2px; border-bottom: 1px solid var(--line); }
+  #logList .thumb { width:44px; height:44px; border-radius:5px; object-fit:cover; background: var(--surface); border: 1px solid var(--line); flex:none; }
+  #logList .info { flex:1; min-width:0; }
+  #logList .who { font-weight:600; font-size:.9rem; }
+  #logList .sub { font-family: var(--font-mono); font-size:.74rem; color: var(--ink-soft); }
+  #emptyLog { color: var(--ink-soft); font-size:.88rem; padding: 14px 2px; }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <h1>Faculty Attendance</h1>
+  <div class="conn" id="connIndicator"><span class="dot"></span><span id="connLabel">Checking…</span></div>
+</header>
+
+<main>
+  <form id="fForm">
+    <div class="field"><label for="fName">Your name</label><input id="fName" required /></div>
+    <div class="field"><label for="fCampus">Campus</label><input id="fCampus" required /></div>
+    <div class="field"><label for="fBatch">Batch</label><input id="fBatch" required /></div>
+    <div class="field"><label for="fClass">Class</label><input id="fClass" required /></div>
+    <div class="field"><label for="fSubject">Subject</label><input id="fSubject" required /></div>
+    <button class="btn btn-primary" id="startBtn" type="submit">Take check-in photo</button>
+  </form>
+
+  <section id="log">
+    <h2>Today's log</h2>
+    <ul id="logList"></ul>
+    <p id="emptyLog" hidden>No check-ins recorded yet today.</p>
+  </section>
+</main>
+
+<div id="cameraStage" hidden>
+  <video id="camVideo" playsinline muted autoplay></video>
+  <p class="camHint" id="camHint">Take a photo of the classroom to confirm you're here</p>
+  <div class="camBottom">
+    <button id="captureBtn" class="btn btn-primary">Capture photo</button>
+    <button id="cancelCamBtn" class="btn btn-ghost">Cancel</button>
+  </div>
+</div>
+
+<canvas id="hiddenCanvas" hidden></canvas>
+
+<script src="/app.js"></script>
+</body>
+</html>

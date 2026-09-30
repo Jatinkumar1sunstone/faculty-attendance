@@ -1,0 +1,14 @@
+{
+  "name": "faculty-attendance-netlify",
+  "version": "2.0.0",
+  "description": "Faculty attendance check-in (Netlify + Google Sheets + Google Drive)",
+  "private": true,
+  "scripts": {
+    "dev": "netlify dev"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "cookie": "^0.6.0",
+    "jsonwebtoken": "^9.0.3"
+  }
+}

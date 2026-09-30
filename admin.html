@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Attendance Dashboard · Admin</title>
+<link rel="icon" href="/icon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="/style.css" />
+<style>
+  .topbar { display:flex; align-items:center; justify-content:space-between; padding: 16px 24px; border-bottom: 1px solid var(--line); background: var(--paper); }
+  .topbar h1 { font-size: 1.15rem; font-weight: 600; }
+  main { max-width: 1080px; margin: 0 auto; padding: 26px 24px 60px; }
+
+  #loginScreen { max-width: 340px; margin: 80px auto; }
+  #loginScreen h2 { font-size: 1.4rem; margin-bottom: .3em; }
+  #loginScreen p { color: var(--ink-soft); font-size: .9rem; margin-bottom: 1.4em; }
+  .field { margin-bottom: 14px; }
+  .field label { display:block; font-size:.82rem; color: var(--ink-soft); margin-bottom: 6px; }
+  .field input { width: 100%; padding: .7em .85em; border-radius: 6px; border: 1px solid var(--line-strong); font-size: 1rem; background: var(--surface); color: var(--ink); }
+  #loginError { color: var(--error); font-size: .85rem; min-height: 1.2em; margin-bottom: 8px; }
+
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 20px; margin-bottom: 24px; }
+  .panelHead { display:flex; align-items:center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 10px; }
+  .panelHead h2 { font-size: 1.05rem; font-weight: 600; }
+
+  .statGrid { display:grid; grid-template-columns: repeat(auto-fit, minmax(130px,1fr)); gap: 12px; margin-bottom: 20px; }
+  .stat { border: 1px solid var(--line); border-radius: 6px; padding: 14px; }
+  .stat .num { font-family: var(--font-display); font-size: 1.7rem; font-weight: 700; }
+  .stat .label { font-size: .78rem; color: var(--ink-soft); }
+
+  .breakdowns { display:grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 640px) { .breakdowns { grid-template-columns: 1fr; } }
+  .bar-row { display:flex; align-items:center; gap: 8px; margin-bottom: 8px; font-size: .82rem; }
+  .bar-row .label { width: 90px; flex: none; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .bar-track { flex:1; height: 8px; background: var(--paper); border-radius: 4px; overflow:hidden; }
+  .bar-fill { height:100%; background: var(--accent); }
+  .bar-row .count { width: 28px; text-align:right; font-family: var(--font-mono); color: var(--ink-soft); }
+
+  #qrBox { display:flex; align-items:center; gap: 16px; flex-wrap: wrap; }
+  #qrBox img { width: 140px; height: 140px; border: 1px solid var(--line); border-radius: 6px; }
+
+  .filters { display:flex; gap: 10px; flex-wrap:wrap; margin-bottom: 14px; }
+  .filters input { padding: .55em .7em; border-radius: 6px; border: 1px solid var(--line-strong); font-family: var(--font-body); font-size: .9rem; }
+
+  table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+  thead th { text-align:left; font-weight: 600; font-size: .78rem; color: var(--ink-soft); padding: 8px 10px; border-bottom: 1px solid var(--line-strong); }
+  tbody td { padding: 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  tbody tr:hover { background: var(--paper); }
+  td.photo img { width: 44px; height: 44px; object-fit: cover; border-radius: 5px; border: 1px solid var(--line); }
+  td.time { font-family: var(--font-mono); font-size: .8rem; }
+  #recordsEmpty { color: var(--ink-soft); padding: 20px 4px; }
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <h2>Attendance Dashboard</h2>
+  <p>Sign in to view check-ins, stats and the check-in QR code.</p>
+  <div id="loginError"></div>
+  <div class="field"><label for="loginUser">Username</label><input id="loginUser" autocomplete="username" /></div>
+  <div class="field"><label for="loginPass">Password</label><input id="loginPass" type="password" autocomplete="current-password" /></div>
+  <button id="loginBtn" class="btn btn-primary" style="width:100%">Sign in</button>
+</div>
+
+<div id="dashboard" hidden>
+  <header class="topbar">
+    <h1>Attendance Dashboard</h1>
+    <button id="logoutBtn" class="btn btn-ghost">Log out</button>
+  </header>
+
+  <main>
+    <section class="panel">
+      <div class="panelHead"><h2>Overview</h2></div>
+      <div class="statGrid" id="statGrid"></div>
+      <div class="breakdowns">
+        <div><h3 style="font-size:.85rem;color:var(--ink-soft);margin:0 0 8px">By campus</h3><div id="campusBars"></div></div>
+        <div><h3 style="font-size:.85rem;color:var(--ink-soft);margin:0 0 8px">By subject</h3><div id="subjectBars"></div></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panelHead"><h2>Check-in QR</h2></div>
+      <div id="qrBox">
+        <img id="qrImg" alt="Check-in QR code" />
+        <div>
+          <p class="hint" style="margin:0 0 8px">Faculty scan this to open the check-in form on their phone.</p>
+          <a id="qrDownload" class="btn btn-ghost" download="faculty-checkin-qr.png" style="display:inline-block;width:auto">Download QR</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panelHead">
+        <h2>Check-ins</h2>
+        <button id="exportBtn" class="btn btn-ghost">Export as CSV</button>
+      </div>
+      <div class="filters">
+        <input id="filterFaculty" placeholder="Filter by faculty name" />
+        <input id="filterCampus" placeholder="Filter by campus" />
+        <input id="filterDate" type="date" />
+        <button id="clearFilters" class="btn btn-ghost">Clear</button>
+      </div>
+      <table>
+        <thead><tr><th>Photo</th><th>Faculty</th><th>Campus</th><th>Batch</th><th>Class</th><th>Subject</th><th>Check-in</th><th>Synced</th></tr></thead>
+        <tbody id="recordsBody"></tbody>
+      </table>
+      <p id="recordsEmpty" hidden>No check-ins match these filters yet.</p>
+    </section>
+  </main>
+</div>
+
+<script src="/admin.js"></script>
+</body>
+</html>
