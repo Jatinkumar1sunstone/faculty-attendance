@@ -123,6 +123,23 @@ export default async (req) => {
       return json(result);
     }
 
+    // ----- photo (admin-only, Drive se proxy) -----
+    if (path === "/api/photo" && req.method === "GET") {
+      const s = getSession(req);
+      if (!s || !s.isAdmin) return json({ error: "not_authenticated" }, 401);
+      const id = url.searchParams.get("id") || "";
+      if (!/^[A-Za-z0-9_-]{10,100}$/.test(id)) return json({ error: "bad_id" }, 400);
+      try {
+        const { contentType, base64 } = await callSheet({ action: "photo", fileId: id });
+        return new Response(Buffer.from(base64, "base64"), {
+          status: 200,
+          headers: { "Content-Type": contentType || "image/jpeg", "Cache-Control": "private, max-age=31536000, immutable" },
+        });
+      } catch {
+        return json({ error: "not_found" }, 404);
+      }
+    }
+
     // ----- admin-only data -----
     if ((path === "/api/attendance" || path === "/api/dashboard") && req.method === "GET") {
       const s = getSession(req);
@@ -162,7 +179,7 @@ export default async (req) => {
         .filter((r) => !campus || r.campus === campus)
         .filter((r) => !batch || r.batch === batch)
         .filter((r) => !date || dayOf(r.checkinTime) === date)
-        .slice(0, 1000);
+        .slice(0, q.get("format") === "csv" ? 5000 : 200);
 
       if (q.get("format") === "csv") {
         const header = ["Faculty", "Campus", "Batch", "Class", "Subject", "Check-in Time", "Photo Time", "Sync Time", "Photo URL"];
@@ -179,7 +196,7 @@ export default async (req) => {
           },
         });
       }
-      return json(rows);
+      return json(rows.map((r) => ({ ...r, photoUrl: r.photoId ? `/api/photo?id=${encodeURIComponent(r.photoId)}` : "" })));
     }
 
     return json({ error: "not_found" }, 404);
